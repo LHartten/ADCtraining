@@ -1,0 +1,24 @@
+---
+title: "FooTwo"
+author: "Leslie Hartten"
+date: "10/8/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure, main="Under Pressure", type = "l")
+```
+
