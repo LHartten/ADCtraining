@@ -9,5 +9,5 @@ Above lines created automatically.  Now I am adding stuff, as proof of concept.
 List made on Mac:
 * Apples
 * Oranges
-* Git users
+* Users of Git
 Second modification on Mac, just because!
