@@ -1,0 +1,208 @@
+---
+title: "Data Tidying Lesson"
+author: "Leslie M. Hartten"
+date: "10/9/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Read in and clean up data
+
+```{r package_load}
+# deploy packages that have already been installed
+# generates errors for duplicate packages
+library(dplyr)
+library(tidyr)
+```
+Generates errors for duplicate packages, e.g.
+    _Attaching package: ‘dplyr’_
+    _The following objects are masked from ‘package:stats’:_
+    _filter, lag_
+Therefore, to access `filter` from the `stats package:
+`stats::filter()`
+
+```{r catch_data_load}
+catch_original <- read.csv("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.302.1",stringsAsFactors = FALSE)
+
+head(catch_original)
+```
+
+Select desired columns using `select()`.
+
+```{r data_select}
+#Note: pipe effectively becomes the first argument of select, aka .data
+catch_data <- catch_original %>% 
+#  select(Region, Year, Chinook, Sockeye, Coho, Pink, Chum)
+  select(-All, -notesRegCode)
+```
+
+```{r}
+summary(catch_data)
+```
+
+Change the values in the Chinook column to numeric using `mutate()`.  This coersion ends up introducing NAs (like MATLAB NaNs).
+
+```{r chinook_coerce}
+catch_clean <- catch_data %>% 
+  mutate(Chinook = as.numeric(Chinook))
+
+head(catch_clean)
+```
+
+Investigate the introduced NAs by using `which()` and `is.na()`.
+
+```{r}
+# i = index of row(s) holding NA
+i <- which(is.na(catch_clean$Chinook))
+i
+```
+
+Look at that/those record(s).
+
+```{r}
+catch_original[i,]
+```
+
+* Use `mutate()` to change the I to a 1
+* Use `mutate()` to coerce Chinook column to numeric
+
+```{r}
+catch_clean <- catch_data %>% 
+#  mutate(Chinook = ifelse(Chinook == "I" | Chinook == "l", 1, Chinook))
+  mutate(Chinook = ifelse(Chinook %in% c("I", "l"), 1, Chinook)) %>% 
+  mutate(Chinook = as.numeric(Chinook))
+
+head(catch_clean)
+```
+
+# Tidy data
+
+Move from a wide to a long format using `pivot_longer()`.  
+
+```{r}
+catch_long <- catch_clean %>% 
+  pivot_longer(cols = -c(Region, Year),
+               names_to = "species",
+               values_to = "catch")
+
+head(catch_long)
+```
+
+BUT wide format can be better for papers!
+
+```{r}
+catch_wide <- catch_long %>% 
+  pivot_wider(names_from = species,
+              values_from = catch)
+
+head(catch_wide)
+```
+
+* `rename()` catch into catch_thousands
+* `mutate()` to create a new catch column
+* `select()` to drop the original catch_thousands
+
+```{r}
+# catch_long <- catch_long %>% 
+#   rename(catch_thousands = catch) %>% 
+#   mutate(catch = catch_thousands * 1000) %>% 
+#   select(-catch_thousands)
+
+catch_long <- catch_long %>% 
+  mutate(catch = catch * 1000)
+
+head(catch_long)
+```
+
+
+# Summarize data
+
+Calculate mean catch by region, or by region & species.
+
+```{r}
+# mean_region <- catch_long %>% 
+#   group_by(Region) %>% 
+#   summarise(mean_catch = mean(catch))
+
+
+mean_region <- catch_long %>%
+  group_by(Region, species) %>%
+  summarise(mean_catch = mean(catch),
+            n_obs = n())
+
+mean_region
+```
+
+mean sockeye catch by region
+```{r}
+mean_sockeye_region <-  catch_long %>% 
+  filter(species == "Sockeye") %>% 
+  group_by(Region) %>% 
+  summarise(mean_catch = mean(catch),
+            n_obs = n())
+
+head(mean_sockeye_region)
+```
+
+
+```{r}
+annual_catch <- catch_long %>% 
+  group_by(Year) %>% 
+  summarise(total_catch = sum(catch)) %>% 
+  # arrange(total_catch)
+  arrange(desc(total_catch))
+
+summary(annual_catch)
+
+range(annual_catch$Year)
+
+annual_catch
+```
+
+```{r region_data_load}
+region_defs <- read.csv("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.303.1", stringsAsFactors = FALSE) %>% 
+  select(code, mgmtArea)
+
+head(region_defs)
+```
+
+Join catch & regions, being careful to not overwrite any of the originals (by using a new variable to hold result, and by using `by = ` construct rather than renaming a column).
+
+```{r}
+catch_joined <- left_join(catch_long, region_defs, by = c("Region" = "code"))
+
+head(catch_joined)
+```
+
+Separate and Unite example
+
+```{r}
+dates_df <- data.frame(date = c("5/24/1930",
+                                "5/25/1930",
+                                "5/26/1930",
+                                "5/27/1930",
+                                "5/28/1930"),
+                       stringsAsFactors = FALSE)
+# Note these aren't saved to variable
+# Note, doing 3 outputs so get 3 boxes; only last will show when knit ?
+
+dates_df %>% 
+  separate(date, into = c("month", "day", "year"), sep = "/", remove = FALSE)
+
+# str_pad function could create 2-digit ... although lubridate is a better option
+dates_df %>% 
+  separate(date, into = c("month", "day", "year"), sep = "/", remove = FALSE) %>% 
+  unite(date_2, year, month, day, sep = "-")
+
+dates_df %>% 
+  mutate(three_char = substr(date, start = 1, stop = 3))
+
+# Requires stringr; best to explicitly load up top
+dates_df %>% 
+  mutate(three_char = stringr::str_sub(date, start = -3, end = -1))
+
+```
+
