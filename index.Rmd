@@ -4,27 +4,64 @@ author: "Leslie M. Hartten"
 date: "10/10/2019"
 output: html_document
 ---
+# Setup
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Libraries (Packages)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r package_load}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 ```
 
-## Including Plots
+# Read in and clean up data
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r data_load}
+esc <- read.csv("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn%3Auuid%3Af119a05b-bbe7-4aea-93c6-85434dcb1c5e", stringsAsFactors = FALSE)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# Calculate Annual Escapement for Salmon Species
+
+```{r}
+species_list <-  c("Chinook", "Sockeye", "Chum", "Pink", "Coho")
+
+# Extract Year info
+# Group by Species, Region, Year
+#   group_by order affects table orders but not values
+# Calculate (Summarize) annual from daily data
+# Focus on a few species
+annual_esc <- esc %>% 
+  separate(sampleDate, c("Year", "Month", "Day"), sep = "-", remove = FALSE) %>% 
+  mutate(Year = as.numeric(Year)) %>% 
+  group_by(Year, SASAP.Region, Species) %>% 
+  summarise(total_escapement = sum(DailyCount)) %>% 
+  filter(Species %in% species_list)
+
+head(annual_esc)
+```
+
+# Visualize Escapement
+
+```{r}
+# stripes caused by geom_col don't show in jpg
+ggplot(data = annual_esc, mapping = aes(x = Species, y = total_escapement)) +
+  geom_col(fill = "blue")
+
+ggplot(data = annual_esc, mapping = aes(x = Species, y = total_escapement, fill = SASAP.Region)) +
+  geom_col()
+
+ggplot(data = annual_esc, mapping = aes(x = Species, y = total_escapement, fill = Year)) +
+  geom_col()
+
+```
+
+# Map Sampling Locations
+
+```{r}
+
+```
+
