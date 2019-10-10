@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Libraries (Packages)
 
-```{r package_load}
+```{r package_load, warning=FALSE, message=FALSE}
 library(dplyr)
 library(tidyr)
 library(ggplot2)
@@ -20,13 +20,14 @@ library(ggplot2)
 
 # Read in and clean up data
 
-```{r data_load}
+```{r data_load, results='hide'}
 
 # Only read data if don't have it
 data_url <- "https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn%3Auuid%3Af119a05b-bbe7-4aea-93c6-85434dcb1c5e"
 
 esc <- tryCatch(
-    read.csv("data/escapement.csv", stringsAsFactors = FALSE),
+#    read.csv("data/escapement.csv", stringsAsFactors = FALSE),
+    read.csv("ADFG_firstAttempt_reformatted.csv", stringsAsFactors = FALSE),
     error=function(cond) {
         message(paste("Escapement file does not seem to exist, so get it from the KNB."))
         esc <- read.csv(url(data_url, method = "libcurl"), stringsAsFactors = FALSE)
@@ -59,7 +60,7 @@ head(annual_esc)
 
 # Visualize Escapement
 
-```{r}
+```{r, echo=FALSE}
 # stripes caused by geom_col don't show in jpg
 ggplot(data = annual_esc, mapping = aes(x = Species, y = total_escapement)) +
   geom_col(fill = "blue")
@@ -68,8 +69,41 @@ ggplot(data = annual_esc, mapping = aes(x = Species, y = total_escapement, fill 
   geom_col()
 
 ggplot(data = annual_esc, mapping = aes(x = Species, y = total_escapement, fill = Year)) +
-  geom_col()
+  geom_col() +
+  ylab("Escapement (number of fish)") +
+  theme_bw()
 
+```
+
+```{r}
+# set a theme
+my_theme <- theme_minimal() +
+  theme(legend.position = "bottom")
+
+# plot, using the stuff in my_theme
+ggplot(data = filter(annual_esc, SASAP.Region == "Kodiak"),
+       mapping = aes(x = Year, y = total_escapement, color = Species)) +
+  geom_point() +
+  geom_line() +
+  scale_color_brewer(palette = "Set1") +
+  ylab("Escapement (number of fish)") +
+  ggtitle("Kodak Salmon Escapement") +
+  my_theme
+```
+
+```{r}
+ggplot(annual_esc, aes(x = Year, y = total_escapement, color = Species)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~SASAP.Region, scales = "free_y") +
+  my_theme
+```
+
+```{r, fig.width = 7, fig.height = 15}
+ggplot(annual_esc, aes(x = Year, y = total_escapement, color = Species)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~SASAP.Region, scales = "free_y", ncol = 1)
 ```
 
 # Map Sampling Locations
