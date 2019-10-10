@@ -389,7 +389,35 @@ library(ggplot2)</code></pre>
 </div>
 <div id="read-in-and-clean-up-data" class="section level1">
 <h1>Read in and clean up data</h1>
-<pre class="r"><code>esc &lt;- read.csv(&quot;https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn%3Auuid%3Af119a05b-bbe7-4aea-93c6-85434dcb1c5e&quot;, stringsAsFactors = FALSE)</code></pre>
+<pre class="r"><code># Only read data if don't have it
+data_url &lt;- &quot;https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn%3Auuid%3Af119a05b-bbe7-4aea-93c6-85434dcb1c5e&quot;
+
+esc &lt;- tryCatch(
+    read.csv(&quot;data/escapement.csv&quot;, stringsAsFactors = FALSE),
+    error=function(cond) {
+        message(paste(&quot;Escapement file does not seem to exist, so get it from the KNB.&quot;))
+        esc &lt;- read.csv(url(data_url, method = &quot;libcurl&quot;), stringsAsFactors = FALSE)
+        return(esc)
+    }
+)</code></pre>
+<pre><code>## Warning in file(file, &quot;rt&quot;): cannot open file 'data/escapement.csv': No
+## such file or directory</code></pre>
+<pre><code>## Escapement file does not seem to exist, so get it from the KNB.</code></pre>
+<pre class="r"><code>head(esc)</code></pre>
+<pre><code>##        Location SASAP.Region sampleDate Species DailyCount  Method
+## 1 Akalura Creek       Kodiak 1930-05-24 Sockeye          4 Unknown
+## 2 Akalura Creek       Kodiak 1930-05-25 Sockeye         10 Unknown
+## 3 Akalura Creek       Kodiak 1930-05-26 Sockeye          0 Unknown
+## 4 Akalura Creek       Kodiak 1930-05-27 Sockeye          0 Unknown
+## 5 Akalura Creek       Kodiak 1930-05-28 Sockeye          0 Unknown
+## 6 Akalura Creek       Kodiak 1930-05-29 Sockeye          0 Unknown
+##   Latitude Longitude Source
+## 1  57.1641 -154.2287   ADFG
+## 2  57.1641 -154.2287   ADFG
+## 3  57.1641 -154.2287   ADFG
+## 4  57.1641 -154.2287   ADFG
+## 5  57.1641 -154.2287   ADFG
+## 6  57.1641 -154.2287   ADFG</code></pre>
 </div>
 <div id="calculate-annual-escapement-for-salmon-species" class="section level1">
 <h1>Calculate Annual Escapement for Salmon Species</h1>
