@@ -2,7 +2,9 @@
 title: "LMH ADCtraining Webpage"
 author: "Leslie M. Hartten"
 date: "10/10/2019"
-output: html_document
+output: 
+  html_document: 
+    toc: yes
 ---
 # Setup
 
@@ -16,6 +18,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(DT) #install.packages("DT")
+library(leaflet)
 ```
 
 # Read in and clean up data
@@ -27,7 +31,7 @@ data_url <- "https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn%3Auuid%3Af11
 
 esc <- tryCatch(
 #    read.csv("data/escapement.csv", stringsAsFactors = FALSE),
-    read.csv("ADFG_firstAttempt_reformatted.csv", stringsAsFactors = FALSE),
+    read.csv("data/ADFG_firstAttempt_reformatted.csv", stringsAsFactors = FALSE),
     error=function(cond) {
         message(paste("Escapement file does not seem to exist, so get it from the KNB."))
         esc <- read.csv(url(data_url, method = "libcurl"), stringsAsFactors = FALSE)
@@ -76,7 +80,7 @@ ggplot(data = annual_esc, mapping = aes(x = Species, y = total_escapement, fill 
 ```
 
 ```{r}
-# set a theme
+# set a theme.  theme_* are "global" for a plot, so order of use is important
 my_theme <- theme_minimal() +
   theme(legend.position = "bottom")
 
@@ -97,18 +101,71 @@ ggplot(annual_esc, aes(x = Year, y = total_escapement, color = Species)) +
   geom_line() +
   facet_wrap(~SASAP.Region, scales = "free_y") +
   my_theme
+
+ggsave("figures/escapementRegions.png")
 ```
 
 ```{r, fig.width = 7, fig.height = 15}
-ggplot(annual_esc, aes(x = Year, y = total_escapement, color = Species)) +
+fig1 <- ggplot(annual_esc, aes(x = Year, y = total_escapement, color = Species)) +
   geom_point() +
   geom_line() +
   facet_wrap(~SASAP.Region, scales = "free_y", ncol = 1)
+
+fig1
+
+# Device to use. Can either be a device function (e.g. png()), or one of "eps", "ps", "tex" (pictex), "pdf", "jpeg", "tiff", "png", "bmp", "svg" or "wmf" (windows only).
+ggsave("figures/escapementRegions2.png", fig1, width = 12, height = 7, units = "in")
 ```
 
 # Map Sampling Locations
 
+Create a table with unique sampling locations, latitudes, and longitudes.
 ```{r}
+locations <-  esc %>% 
+  distinct(Location, Latitude, Longitude) %>% 
+  drop_na()
 
+head(locations)
 ```
+
+Create table of locations and positions.  Resulting html table is very, very slick!
+(Note, separated chunk that creates output from chunk that did analysis.)
+```{r}
+datatable(locations)
+```
+
+```{r}
+# could use mutate call to create/define popup text
+
+leaflet(locations) %>% 
+  addTiles() %>% 
+  addMarkers(lat = ~Latitude, lng = ~Longitude, popup = ~Location)
+
+# Projection is from the projection of tiles (set for open street maps & google street maps).  In options, can change projection, but then no longer use those tiles!  Need GIS layers or some other built basemap.
+# SF has projection options
+# Maybe ADC will build ...
+# Tiles are not required.  You could provide a shapefile for coasts, etc.
+```
+
+```{r}
+leaflet(locations) %>% 
+  addWMSTiles("https://www.gebco.net/data_and_products/gebco_web_services/web_map_service/mapserv?",
+              layers = 'GEBCO_LATEST',
+              attribution = "Imagery reproduced from the GEBCO_2014 Grid, version 20150318, www.gebco.net") %>%
+  addCircleMarkers(lng = ~Longitude,
+                   lat = ~Latitude,
+                   popup = ~ Location,
+                   radius = 5,
+                   # set fill properties
+                   fillColor = "salmon",
+                   fillOpacity = 1,
+                   # set stroke properties
+                   stroke = T,
+                   weight = 0.5,
+                   color = "white",
+                   opacity = 1)
+```
+
+
+
 
