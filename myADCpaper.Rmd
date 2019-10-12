@@ -1,0 +1,110 @@
+---
+title: "Our Best ADC Results"
+author: ["Leslie M. Hartten", "Jeanette Clark", "Matthew B. Jones", "Edward Correlation"]
+date: "10/11/2019"
+output: html_document
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library_load, echo=FALSE}
+library(ggplot2)
+library(broom) # install.packages("broom")
+library(knitr)
+library(captioner)
+```
+
+```{r data_load, echo=FALSE, message=FALSE, results='hide'}
+# stuff won't show up in knit document
+data(diamonds)
+head(diamonds)
+```
+
+# Abstract
+
+This is my abstract.  It should have a lot of words, but probably no more than 250.
+
+# Introduction
+
+This is the start of my introduction.  It is meet and good to cite other groups like R [@RCoreTeam] using citations in RMarkdown.
+
+Writing reports and academic papers is a ton of work but a large amount of that work can be spent doing monotonous tasks such as:
+
+- Updating figures and tables as we refine our analysis
+- Editing our analysis and, in turn, editing our paper's text
+- Managing bibliography sections and in-text citations/references
+
+These monotonous tasks are also highly error-prone.
+With RMarkdown, we can close the loop, so to speak, between our analysis and our manuscript because the manuscript can become the analysis.
+
+As an alternative to Microsoft Word, RMarkdown provides some advantages:
+
+- Free to use
+- Uses text so we can:
+  - Use version control for
+    - Tracking changes
+    - Collaborating
+  - Edit it with our favorite and most powerful text editors
+  - Use the command line to for automation
+
+The rest of this document will show how we get some of the features we need such as:
+
+- Attractive typesetting for mathematics
+- Figures, tables, and captions
+- In-text citations
+- Bibliographies
+
+# Data and Methods
+
+Our analysis will be pretty simple.
+We'll use the `diamonds` dataset from the `ggplot2` [@ggplot] package and run a simple linear model.
+At the top of this document, we started with a code chunk with `echo=FALSE` set as a chunk option so that we can load the `ggplot2` package and `diamonds` dataset without outputting anything to the screen.
+
+The folowing construct shows the equation inline when you render it:
+$$\sum_{x=1}^{N}x+1$$
+
+For our analysis, we'll create a really great plot which really shows the relationship between price and carat and shows how we include plots in our document.
+Then we'll run a linear model of the form $y = mx + b$ on the relationship between price and carat and shows how we include tables in our document.
+We can also put some more advanced math in our paper and it will be beautifully typeset:
+
+\[\sum_{i=1}^{N}{log(i) + \frac{\omega}{x}}\]
+
+(This format shows when you hover.)
+
+# Results
+
+The plot we made was really great (Figure 1).
+
+```{r pricevscarat, echo=FALSE, fig.width=8, fig.height=4, fig.align='center', cache=TRUE}
+ggplot(diamonds, aes(carat, price, color = clarity)) + 
+  geom_point() + # scatter plot
+  labs(x = "Carat", y = "Price")
+```
+
+(Note that you could build functions for analysis, source them here, and run them.  Or you could do those things & save the results in this directory, then load them and plot them.)
+
+Here's a little analysis.  We find that the model was even better than the data, possibly because we used a simple linear model instead of the OLS Bisector [@BabuFeigelson] method:
+
+```{r themodel, echo=FALSE}
+mod <- lm(price ~ carat, diamonds)
+#kable(tidy(mod), digits = 2, caption = cap_themodel)
+kable(tidy(mod), digits = 2)
+```
+
+If you have some text, you can see that our n is `r 13*4`.
+
+We were delighted to find that the slope parameter was `r round(mod$coefficients["carat"][[1]], 2)`.
+
+
+# Discussion
+
+Incredibly insightful views ...
+
+# References
+
+devtools::install_github("benmarwick/rrtools")
+
+
